@@ -1,0 +1,13 @@
+streamlit
+
+pandas
+
+matplotlib
+
+cartopy
+
+pyproj
+
+shapely
+
+numpy<2

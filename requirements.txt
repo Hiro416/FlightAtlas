@@ -1,13 +1,8 @@
 streamlit
-
 pandas
-
 matplotlib
-
 cartopy
-
 pyproj
-
 shapely
-
 numpy<2
+airportsdata

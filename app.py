@@ -26,7 +26,7 @@ OUTPUT_PREFIX = "my_flight_map_aeqd"
 
 AIRPORT_CSV_URL = (
     "https://raw.githubusercontent.com/"
-    "mwgg/Airports/master/airports.csv"
+    "mborsetti/airportsdata/refs/heads/main/airportsdata/airports.csv"
 )
 
 GEOD = Geod(ellps="WGS84")

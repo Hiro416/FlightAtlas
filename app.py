@@ -28,6 +28,33 @@ st.caption(
     "Flighty CSVから正距方位図法のフライトマップを生成します。"
 )
 
+st.markdown(
+
+    """
+
+    <div style="margin: 0.5rem 0 1.5rem 0;">
+
+        <a href="https://www.buymeacoffee.com/YOUR_ID" target="_blank">
+
+            ☕ Buy me a coffee
+
+        </a>
+
+        &nbsp;|&nbsp;
+
+        <a href="https://github.com/sponsors/YOUR_GITHUB_ID" target="_blank">
+
+            💖 GitHub Sponsors
+
+        </a>
+
+    </div>
+
+    """,
+
+    unsafe_allow_html=True
+
+)
 
 # =========================================================
 # Constants

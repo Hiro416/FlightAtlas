@@ -6,6 +6,7 @@ from io import BytesIO
 import airportsdata
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
@@ -24,37 +25,36 @@ st.set_page_config(
 )
 
 st.title("My Flight Atlas")
+
 st.caption(
     "Flighty CSVから正距方位図法のフライトマップを生成します。"
 )
 
-st.markdown(
+# =========================================================
+# Buy Me a Coffee
+# =========================================================
 
+components.html(
     """
-
-    <div style="margin: 0.5rem 0 1.5rem 0;">
-
-        <a href="https://www.buymeacoffee.com/YOUR_ID" target="_blank">
-
-            ☕ Buy me a coffee
-
-        </a>
-
-        &nbsp;|&nbsp;
-
-        <a href="https://github.com/sponsors/YOUR_GITHUB_ID" target="_blank">
-
-            💖 GitHub Sponsors
-
-        </a>
-
-    </div>
-
+    <script
+        type="text/javascript"
+        src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+        data-name="bmc-button"
+        data-slug="hayahiro"
+        data-color="#5F7FFF"
+        data-emoji=""
+        data-font="Lato"
+        data-text="Buy me a coffee"
+        data-outline-color="#000000"
+        data-font-color="#ffffff"
+        data-coffee-color="#FFDD00">
+    </script>
     """,
-
-    unsafe_allow_html=True
-
+    height=80,
 )
+
+st.divider()
+
 
 # =========================================================
 # Constants
@@ -297,10 +297,6 @@ def plot_flight_map(
     ax.set_xlim(-range_m, range_m)
     ax.set_ylim(-range_m, range_m)
 
-    # =====================================================
-    # Base map
-    # =====================================================
-
     ax.add_feature(
         cfeature.OCEAN.with_scale("50m"),
         facecolor="#eef6fb",
@@ -345,10 +341,6 @@ def plot_flight_map(
         zorder=2
     )
 
-    # =====================================================
-    # Routes
-    # =====================================================
-
     max_count = (
         max(route_counts.values())
         if route_counts
@@ -392,10 +384,6 @@ def plot_flight_map(
             zorder=3
         )
 
-    # =====================================================
-    # Airports
-    # =====================================================
-
     max_airport_count = (
         max(airport_counts.values())
         if airport_counts
@@ -423,10 +411,6 @@ def plot_flight_map(
             transform=ccrs.PlateCarree(),
             zorder=5
         )
-
-    # =====================================================
-    # Labels
-    # =====================================================
 
     label_codes = (
         {
@@ -462,10 +446,6 @@ def plot_flight_map(
             zorder=6,
         )
 
-    # =====================================================
-    # Center marker
-    # =====================================================
-
     ax.scatter(
         center_lon,
         center_lat,
@@ -489,10 +469,6 @@ def plot_flight_map(
         zorder=9,
     )
 
-    # =====================================================
-    # Title
-    # =====================================================
-
     title = (
         f"My Flight Map — "
         f"Azimuthal Equidistant centered on {center}"
@@ -512,10 +488,6 @@ def plot_flight_map(
         pad=28,
         weight="bold"
     )
-
-    # =====================================================
-    # Legend
-    # =====================================================
 
     legend = [
         Line2D(
@@ -756,11 +728,6 @@ st.download_button(
     file_name=f"{OUTPUT_PREFIX}_{center_airport}.svg",
     mime="image/svg+xml",
 )
-
-
-# =========================================================
-# Tables
-# =========================================================
 
 left, right = st.columns(2)
 

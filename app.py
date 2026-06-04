@@ -21,39 +21,166 @@ from pyproj import Geod
 
 st.set_page_config(
     page_title="My Flight Atlas",
-    layout="wide"
+    layout="wide",
+    page_icon="✈️",
 )
 
-st.title("My Flight Atlas")
-
-st.caption(
-    "Flighty CSVから正距方位図法のフライトマップを生成します。"
-)
-
-# =========================================================
-# Buy Me a Coffee
-# =========================================================
-
-components.html(
+st.markdown(
     """
-    <script
-        type="text/javascript"
-        src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
-        data-name="bmc-button"
-        data-slug="hayahiro"
-        data-color="#5F7FFF"
-        data-emoji=""
-        data-font="Lato"
-        data-text="Buy me a coffee"
-        data-outline-color="#000000"
-        data-font-color="#ffffff"
-        data-coffee-color="#FFDD00">
-    </script>
+    <style>
+    :root {
+        --atlas-ink: #172033;
+        --atlas-muted: #64748b;
+        --atlas-line: #d9e2ec;
+        --atlas-panel: #ffffff;
+        --atlas-surface: #f6f8fb;
+        --atlas-accent: #c7372f;
+        --atlas-blue: #1f5f8b;
+    }
+
+    .stApp {
+        background:
+            radial-gradient(circle at top left, rgba(31, 95, 139, 0.10), transparent 30rem),
+            linear-gradient(180deg, #f8fbff 0%, #f4f7fb 46%, #ffffff 100%);
+        color: var(--atlas-ink);
+    }
+
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        max-width: 1320px;
+    }
+
+    [data-testid="stSidebar"] {
+        background: #ffffff;
+        border-right: 1px solid var(--atlas-line);
+    }
+
+    div[data-testid="stMetric"] {
+        background: rgba(255, 255, 255, 0.84);
+        border: 1px solid var(--atlas-line);
+        border-radius: 8px;
+        padding: 1rem 1rem 0.85rem;
+        box-shadow: 0 10px 28px rgba(23, 32, 51, 0.06);
+    }
+
+    div[data-testid="stMetric"] label {
+        color: var(--atlas-muted);
+        font-weight: 700;
+    }
+
+    .atlas-hero {
+        border-bottom: 1px solid var(--atlas-line);
+        margin-bottom: 1.25rem;
+        padding: 0.75rem 0 1.4rem;
+    }
+
+    .atlas-kicker {
+        color: var(--atlas-blue);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .atlas-title {
+        color: var(--atlas-ink);
+        font-size: clamp(2.2rem, 5vw, 4.6rem);
+        font-weight: 850;
+        letter-spacing: 0;
+        line-height: 0.98;
+        margin: 0.2rem 0 0.75rem;
+    }
+
+    .atlas-lead {
+        color: #3d4b63;
+        font-size: 1.05rem;
+        line-height: 1.65;
+        max-width: 760px;
+        margin: 0;
+    }
+
+    .atlas-section-label {
+        color: var(--atlas-muted);
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.07em;
+        margin: 0.25rem 0 0.75rem;
+        text-transform: uppercase;
+    }
+
+    .atlas-empty {
+        background: rgba(255, 255, 255, 0.80);
+        border: 1px dashed #b9c7d6;
+        border-radius: 8px;
+        padding: 1.25rem 1.35rem;
+    }
+
+    .atlas-empty strong {
+        color: var(--atlas-ink);
+        display: block;
+        font-size: 1.05rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .atlas-empty span {
+        color: var(--atlas-muted);
+    }
+
+    .stDownloadButton button,
+    .stButton button {
+        border-radius: 8px;
+        font-weight: 800;
+    }
+
+    div[data-testid="stFileUploader"] > label,
+    div[data-testid="stFileUploader"] > label p {
+        color: var(--atlas-ink) !important;
+        font-weight: 800;
+    }
+    </style>
     """,
-    height=80,
+    unsafe_allow_html=True,
 )
 
-st.divider()
+st.markdown(
+    """
+    <section class="atlas-hero">
+      <div class="atlas-kicker">Flighty CSV mapper</div>
+      <h1 class="atlas-title">My Flight Atlas</h1>
+      <p class="atlas-lead">
+        Flightyから書き出したCSVを読み込み、任意の空港を中心にした正距方位図法の地図へフライトログをプロットします。
+        よく使う空港、重複ルート、総移動距離を一画面で確認できます。
+      </p>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
+
+# =========================================================
+# Support button
+# =========================================================
+
+def render_support_button():
+
+    components.html(
+        """
+        <script
+            type="text/javascript"
+            src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+            data-name="bmc-button"
+            data-slug="hayahiro"
+            data-color="#5F7FFF"
+            data-emoji=""
+            data-font="Lato"
+            data-text="Buy me a coffee"
+            data-outline-color="#000000"
+            data-font-color="#ffffff"
+            data-coffee-color="#FFDD00">
+        </script>
+        """,
+        height=80,
+    )
 
 
 # =========================================================
@@ -94,6 +221,24 @@ def load_airports():
 
 
 AIRPORTS = load_airports()
+
+
+def airport_option_label(code):
+
+    airport = AIRPORTS.get(code, {})
+
+    city = airport.get("city") or airport.get("label") or ""
+    country = airport.get("country") or ""
+
+    detail = " / ".join(
+        part for part in (city, country)
+        if part
+    )
+
+    if detail:
+        return f"{code} — {detail}"
+
+    return code
 
 
 # =========================================================
@@ -579,13 +724,20 @@ def fig_to_bytes(
 
 uploaded = st.file_uploader(
     "Flighty CSVをアップロード",
-    type=["csv"]
+    type=["csv"],
+    help="FlightyのエクスポートCSVをそのまま指定してください。",
 )
 
 if uploaded is None:
 
-    st.info(
-        "FlightyのCSVを書き出してアップロードしてください。"
+    st.markdown(
+        """
+        <div class="atlas-empty">
+          <strong>CSVをアップロードすると、地図と集計がここに表示されます。</strong>
+          <span>Flightyのフライトログを書き出し、この欄へCSVファイルを追加してください。</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     st.stop()
@@ -596,8 +748,8 @@ if uploaded is None:
 # =========================================================
 
 flights = read_flights(uploaded)
-
-data = build_flight_data(flights)
+with st.spinner("フライトログを解析しています..."):
+    data = build_flight_data(flights)
 
 if data["missing"]:
 
@@ -631,34 +783,63 @@ default_center = (
 
 with st.sidebar:
 
-    st.header("Settings")
+    st.header("Map settings")
 
     center_airport = st.selectbox(
-        "Center Airport",
+        "Center airport",
         available_airports,
         index=available_airports.index(
             default_center
         ),
+        format_func=airport_option_label,
     )
 
-    range_m = st.slider(
-        "Map range",
-        min_value=8_000_000,
-        max_value=20_000_000,
-        value=14_500_000,
-        step=500_000,
+    range_km = st.slider(
+        "Map radius",
+        min_value=8_000,
+        max_value=20_000,
+        value=14_500,
+        step=500,
+        format="%d km",
     )
+
+    range_m = range_km * 1000
 
     st.caption(
-        f"{len(AIRPORTS):,} airports loaded"
+        f"{len(AIRPORTS):,} airports loaded from the local database."
     )
+
+    st.divider()
+
+    st.subheader("Export")
+
+    st.caption(
+        "地図の生成後にPNG、PDF、SVGを書き出せます。"
+    )
+
+    st.divider()
+
+    st.subheader("Support")
+
+    render_support_button()
 
 
 # =========================================================
 # Metrics
 # =========================================================
 
-col1, col2, col3, col4 = st.columns(4)
+years_text = (
+    f"{min(data['years'])}–{max(data['years'])}"
+    if data["years"]
+    else "N/A"
+)
+
+st.markdown(
+    '<div class="atlas-section-label">Overview</div>',
+    unsafe_allow_html=True,
+)
+
+col1, col2, col3, col4, col5 = st.columns(5)
 
 col1.metric(
     "Flights",
@@ -680,87 +861,140 @@ col4.metric(
     f"{data['total_km']:,.0f} km"
 )
 
-st.divider()
+col5.metric(
+    "Years",
+    years_text
+)
 
 
 # =========================================================
 # Plot
 # =========================================================
 
-fig = plot_flight_map(
-    data,
-    center=center_airport,
-    figsize=(24, 24),
-    range_m=range_m,
+map_tab, data_tab = st.tabs(
+    ["Map", "Rankings"]
 )
 
-st.pyplot(
-    fig,
-    use_container_width=True
-)
+with map_tab:
+
+    st.markdown(
+        '<div class="atlas-section-label">Azimuthal equidistant map</div>',
+        unsafe_allow_html=True,
+    )
+
+    with st.spinner("地図を描画しています..."):
+        fig = plot_flight_map(
+            data,
+            center=center_airport,
+            figsize=(24, 24),
+            range_m=range_m,
+        )
+
+    st.pyplot(
+        fig,
+        use_container_width=True
+    )
 
 
 # =========================================================
 # Downloads
 # =========================================================
 
-png_bytes = fig_to_bytes(fig, "png")
-pdf_bytes = fig_to_bytes(fig, "pdf")
-svg_bytes = fig_to_bytes(fig, "svg")
+    png_bytes = fig_to_bytes(fig, "png")
+    pdf_bytes = fig_to_bytes(fig, "pdf")
+    svg_bytes = fig_to_bytes(fig, "svg")
 
-st.download_button(
-    "Download PNG",
-    data=png_bytes,
-    file_name=f"{OUTPUT_PREFIX}_{center_airport}.png",
-    mime="image/png",
-)
+    dl1, dl2, dl3 = st.columns(3)
 
-st.download_button(
-    "Download PDF",
-    data=pdf_bytes,
-    file_name=f"{OUTPUT_PREFIX}_{center_airport}.pdf",
-    mime="application/pdf",
-)
+    dl1.download_button(
+        "Download PNG",
+        data=png_bytes,
+        file_name=f"{OUTPUT_PREFIX}_{center_airport}.png",
+        mime="image/png",
+        use_container_width=True,
+    )
 
-st.download_button(
-    "Download SVG",
-    data=svg_bytes,
-    file_name=f"{OUTPUT_PREFIX}_{center_airport}.svg",
-    mime="image/svg+xml",
-)
+    dl2.download_button(
+        "Download PDF",
+        data=pdf_bytes,
+        file_name=f"{OUTPUT_PREFIX}_{center_airport}.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+    )
 
-left, right = st.columns(2)
+    dl3.download_button(
+        "Download SVG",
+        data=svg_bytes,
+        file_name=f"{OUTPUT_PREFIX}_{center_airport}.svg",
+        mime="image/svg+xml",
+        use_container_width=True,
+    )
 
-with left:
+with data_tab:
 
-    st.subheader("Top Airports")
+    left, right = st.columns(2)
 
     airport_rank = pd.DataFrame(
-        data["airport_counts"].most_common(),
-        columns=["Airport", "Count"],
+        [
+            {
+                "Airport": code,
+                "City": AIRPORTS[code].get("city", ""),
+                "Country": AIRPORTS[code].get("country", ""),
+                "Flights": count,
+            }
+            for code, count
+            in data["airport_counts"].most_common()
+        ]
     )
-
-    st.dataframe(
-        airport_rank,
-        use_container_width=True
-    )
-
-with right:
-
-    st.subheader("Top Routes")
 
     route_rank = pd.DataFrame(
         [
             {
                 "Route": f"{a}-{b}",
-                "Count": c
+                "From": airport_option_label(a),
+                "To": airport_option_label(b),
+                "Flights": c
             }
             for (a, b), c
             in data["route_counts"].most_common()
         ]
     )
 
+    airline_rank = pd.DataFrame(
+        [
+            {
+                "Airline": airline,
+                "Flights": count,
+            }
+            for airline, count
+            in data["airline_counts"].most_common()
+        ]
+    )
+
+    with left:
+
+        st.subheader("Top Airports")
+
+        st.dataframe(
+            airport_rank,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    with right:
+
+        st.subheader("Top Routes")
+
+        st.dataframe(
+            route_rank,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    st.subheader("Top Airlines")
+
     st.dataframe(
-        route_rank,
-        use_container_width=True
+        airline_rank,
+        use_container_width=True,
+        hide_index=True,
     )

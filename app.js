@@ -25,11 +25,25 @@ const els = {
   airlineRank: document.querySelector("#airline-rank"),
   downloadSvg: document.querySelector("#download-svg"),
   downloadPng: document.querySelector("#download-png"),
+  modeButtons: [...document.querySelectorAll(".mode-button")],
+  passport: {
+    card: document.querySelector("#passport-card"),
+    flights: document.querySelector("#passport-flights"),
+    issuePlace: document.querySelector("#passport-issue-place"),
+    issueDate: document.querySelector("#passport-issue-date"),
+    memberSince: document.querySelector("#passport-member-since"),
+    distance: document.querySelector("#passport-distance"),
+    airports: document.querySelector("#passport-airports"),
+    routes: document.querySelector("#passport-routes"),
+    airlines: document.querySelector("#passport-airlines"),
+    machineLine: document.querySelector("#passport-machine-line"),
+  },
 };
 
 let airports = {};
 let worldLand = [];
 let state = null;
+let currentTheme = "atlas";
 
 init();
 
@@ -46,6 +60,24 @@ async function init() {
   els.radius.addEventListener("input", renderAll);
   els.downloadSvg.addEventListener("click", downloadSvg);
   els.downloadPng.addEventListener("click", downloadPng);
+  els.modeButtons.forEach((button) => button.addEventListener("click", handleThemeChange));
+  applyTheme();
+}
+
+function handleThemeChange(event) {
+  currentTheme = event.currentTarget.dataset.theme;
+  applyTheme();
+  renderAll();
+}
+
+function applyTheme() {
+  document.body.dataset.theme = currentTheme;
+  els.modeButtons.forEach((button) => {
+    const active = button.dataset.theme === currentTheme;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  els.passport.card.hidden = currentTheme !== "passport" || !state;
 }
 
 async function handleFile(event) {
@@ -182,6 +214,7 @@ function renderAll() {
   renderMetrics();
   renderWarnings();
   renderRankings();
+  renderPassport();
   renderMap();
 }
 
@@ -231,6 +264,25 @@ function renderAirlineRank() {
   renderRows(els.airlineRank, rows);
 }
 
+function renderPassport() {
+  els.passport.card.hidden = currentTheme !== "passport";
+  if (currentTheme !== "passport") return;
+
+  const centerCode = els.center.value;
+  const issueDate = formatPassportDate(new Date());
+  const memberSince = formatMemberSince(state.years);
+
+  els.passport.flights.textContent = number(state.flights.length);
+  els.passport.issuePlace.textContent = centerCode || "---";
+  els.passport.issueDate.textContent = issueDate;
+  els.passport.memberSince.textContent = memberSince;
+  els.passport.distance.textContent = `${number(Math.round(state.totalKm))} km`;
+  els.passport.airports.textContent = number(state.airportCounts.size);
+  els.passport.routes.textContent = number(state.routeCounts.size);
+  els.passport.airlines.textContent = number(state.airlineCounts.size);
+  els.passport.machineLine.textContent = `ALLTIME<<FLIGHT<ATLAS<<ISSUED${compactDate(issueDate)}${centerCode}<<<<${number(state.flights.length)}FLIGHTS`;
+}
+
 function renderRows(tbody, rows) {
   tbody.replaceChildren(
     ...rows.map((cells) => {
@@ -254,11 +306,12 @@ function renderMap() {
   const rangeKm = Number(els.radius.value);
   const rangeRad = rangeKm / EARTH_RADIUS_KM;
   const project = makeAzimuthalProjector(center.lon, center.lat, size / 2, size / 2, radiusPx / rangeRad);
+  const palette = mapPalette();
 
   els.svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
   els.svg.replaceChildren();
 
-  append("rect", { x: 0, y: 0, width: size, height: size, fill: "#ffffff" });
+  append("rect", { x: 0, y: 0, width: size, height: size, fill: palette.page });
   const defs = append("defs");
   const clip = document.createElementNS(SVG_NS, "clipPath");
   clip.setAttribute("id", "map-clip");
@@ -268,22 +321,24 @@ function renderMap() {
   clipCircle.setAttribute("r", radiusPx);
   clip.appendChild(clipCircle);
   defs.appendChild(clip);
+  if (currentTheme === "passport") addPassportPatterns(defs);
 
-  append("circle", { cx: size / 2, cy: size / 2, r: radiusPx, fill: "#eef6fb", stroke: "#9fb4c8", "stroke-width": 1.2 });
-  drawWorldLand(project, rangeRad);
-  drawGraticule(project, rangeRad);
-  drawRoutes(project, rangeRad);
-  drawAirports(project, rangeRad);
-  drawLabels(project, rangeRad, centerCode);
-  drawTitle(size, centerCode, center);
+  append("circle", { cx: size / 2, cy: size / 2, r: radiusPx, fill: palette.ocean, stroke: palette.border, "stroke-width": 1.2 });
+  if (currentTheme === "passport") drawPassportTopline(size);
+  drawWorldLand(project, rangeRad, palette);
+  drawGraticule(project, rangeRad, palette);
+  drawRoutes(project, rangeRad, palette);
+  drawAirports(project, rangeRad, palette);
+  drawLabels(project, rangeRad, centerCode, palette);
+  drawTitle(size, centerCode, center, palette);
 }
 
-function drawWorldLand(project, rangeRad) {
+function drawWorldLand(project, rangeRad, palette) {
   const group = append("g", {
     "clip-path": "url(#map-clip)",
-    fill: "#f4efe6",
-    stroke: "#d0c7b7",
-    "stroke-width": 0.8,
+    fill: palette.land,
+    stroke: palette.landStroke,
+    "stroke-width": palette.landStrokeWidth,
   });
 
   for (const polygon of worldLand) {
@@ -292,8 +347,14 @@ function drawWorldLand(project, rangeRad) {
   }
 }
 
-function drawGraticule(project, rangeRad) {
-  const group = append("g", { fill: "none", stroke: "#9aa9b7", "stroke-width": 0.75, "stroke-dasharray": "5 8", opacity: 0.42 });
+function drawGraticule(project, rangeRad, palette) {
+  const group = append("g", {
+    fill: "none",
+    stroke: palette.graticule,
+    "stroke-width": 0.75,
+    "stroke-dasharray": "5 8",
+    opacity: palette.graticuleOpacity,
+  });
 
   for (let lat = -60; lat <= 60; lat += 30) {
     const points = [];
@@ -308,9 +369,9 @@ function drawGraticule(project, rangeRad) {
   }
 }
 
-function drawRoutes(project, rangeRad) {
+function drawRoutes(project, rangeRad, palette) {
   const maxCount = Math.max(1, ...state.routeCounts.values());
-  const group = append("g", { fill: "none", stroke: "#c7372f", "stroke-linecap": "round" });
+  const group = append("g", { fill: "none", stroke: palette.route, "stroke-linecap": "round" });
 
   for (const [route, count] of state.routeCounts) {
     const [depCode, arrCode] = route.split("|");
@@ -327,7 +388,7 @@ function drawRoutes(project, rangeRad) {
   }
 }
 
-function drawAirports(project, rangeRad) {
+function drawAirports(project, rangeRad, palette) {
   const maxCount = Math.max(1, ...state.airportCounts.values());
 
   for (const [code, count] of state.airportCounts) {
@@ -339,14 +400,14 @@ function drawAirports(project, rangeRad) {
       cx: point.x,
       cy: point.y,
       r: 3 + 9 * (count / maxCount) ** 0.55,
-      fill: "#1f2a44",
-      stroke: "#ffffff",
-      "stroke-width": 1.4,
+      fill: palette.airport,
+      stroke: palette.airportStroke,
+      "stroke-width": palette.airportStrokeWidth,
     });
   }
 }
 
-function drawLabels(project, rangeRad, centerCode) {
+function drawLabels(project, rangeRad, centerCode, palette) {
   const topCodes = sortedEntries(state.airportCounts).slice(0, 35).map(([code]) => code);
   const fixedCodes = ["FAI", "ANC", "TPA", "JFK", "EWR", "DEL", "DOH", "HEL", "TPE", "HKG", "SEA", "SFO", "LAX", "SYD", "CDG"];
   const codes = new Set([centerCode, ...topCodes, ...fixedCodes]);
@@ -360,7 +421,7 @@ function drawLabels(project, rangeRad, centerCode) {
     append("text", {
       x: point.x + 7,
       y: point.y - 7,
-      fill: "#111111",
+      fill: palette.label,
       "font-size": code === centerCode ? 19 : 13,
       "font-weight": 800,
     }, `${code}${code === centerCode ? ` / ${airport.label || airport.city || ""}` : ""}`);
@@ -370,35 +431,36 @@ function drawLabels(project, rangeRad, centerCode) {
   const point = project(center.lon, center.lat);
   append("path", {
     d: starPath(point.x, point.y, 17, 7, 5),
-    fill: "#ffd166",
-    stroke: "#111111",
+    fill: palette.center,
+    stroke: palette.centerStroke,
     "stroke-width": 1.4,
   });
 }
 
-function drawTitle(size, centerCode) {
+function drawTitle(size, centerCode, center, palette) {
   const years = state.years.length ? `${Math.min(...state.years)}-${Math.max(...state.years)}` : "";
   append("text", {
     x: size / 2,
     y: 38,
     "text-anchor": "middle",
-    fill: "#172033",
+    fill: palette.title,
     "font-size": 30,
     "font-weight": 850,
-  }, "My Flight Map");
+    "letter-spacing": currentTheme === "passport" ? 3 : 0,
+  }, currentTheme === "passport" ? "MY FLIGHT PASSPORT" : "My Flight Map");
   append("text", {
     x: size / 2,
     y: 68,
     "text-anchor": "middle",
-    fill: "#3d4b63",
+    fill: palette.subtitle,
     "font-size": 16,
     "font-weight": 700,
-  }, `Azimuthal equidistant centered on ${centerCode}`);
+  }, currentTheme === "passport" ? `Place of issue ${centerCode} / ${center.city || center.label || ""}` : `Azimuthal equidistant centered on ${centerCode}`);
   append("text", {
     x: size / 2,
     y: 92,
     "text-anchor": "middle",
-    fill: "#3d4b63",
+    fill: palette.subtitle,
     "font-size": 15,
     "font-weight": 700,
   }, `${number(state.flights.length)} flights | ${number(state.airportCounts.size)} airports | ${number(state.routeCounts.size)} routes | approx. ${number(Math.round(state.totalKm))} km | ${years}`);
@@ -406,9 +468,105 @@ function drawTitle(size, centerCode) {
     x: size - 22,
     y: size - 20,
     "text-anchor": "end",
-    fill: "#555555",
+    fill: palette.credit,
     "font-size": 12,
   }, "Data: Flighty CSV export");
+}
+
+function mapPalette() {
+  if (currentTheme === "passport") {
+    return {
+      page: "#fffdf3",
+      ocean: "#fbfaf0",
+      border: "#0a2f86",
+      land: "url(#passport-land-stripes)",
+      landStroke: "#7de1e4",
+      landStrokeWidth: 0.35,
+      graticule: "#d7d7c8",
+      graticuleOpacity: 0.55,
+      route: "#dd5a00",
+      airport: "#ef5a64",
+      airportStroke: "#9b1219",
+      airportStrokeWidth: 3,
+      center: "#ffcf42",
+      centerStroke: "#7b1518",
+      label: "#2f2f33",
+      title: "#061e77",
+      subtitle: "#3f4593",
+      credit: "#77776d",
+    };
+  }
+
+  return {
+    page: "#ffffff",
+    ocean: "#eef6fb",
+    border: "#9fb4c8",
+    land: "#f4efe6",
+    landStroke: "#d0c7b7",
+    landStrokeWidth: 0.8,
+    graticule: "#9aa9b7",
+    graticuleOpacity: 0.42,
+    route: "#c7372f",
+    airport: "#1f2a44",
+    airportStroke: "#ffffff",
+    airportStrokeWidth: 1.4,
+    center: "#ffd166",
+    centerStroke: "#111111",
+    label: "#111111",
+    title: "#172033",
+    subtitle: "#3d4b63",
+    credit: "#555555",
+  };
+}
+
+function addPassportPatterns(defs) {
+  const pattern = document.createElementNS(SVG_NS, "pattern");
+  pattern.setAttribute("id", "passport-land-stripes");
+  pattern.setAttribute("width", "7");
+  pattern.setAttribute("height", "7");
+  pattern.setAttribute("patternUnits", "userSpaceOnUse");
+  pattern.setAttribute("patternTransform", "rotate(8)");
+
+  const bg = document.createElementNS(SVG_NS, "rect");
+  bg.setAttribute("width", "7");
+  bg.setAttribute("height", "7");
+  bg.setAttribute("fill", "#f0fffb");
+  bg.setAttribute("opacity", "0.65");
+  pattern.appendChild(bg);
+
+  const line = document.createElementNS(SVG_NS, "path");
+  line.setAttribute("d", "M 1 0 L 1 7 M 4 0 L 4 7");
+  line.setAttribute("stroke", "#31d6e2");
+  line.setAttribute("stroke-width", "1.3");
+  line.setAttribute("opacity", "0.82");
+  pattern.appendChild(line);
+  defs.appendChild(pattern);
+}
+
+function drawPassportTopline(size) {
+  const group = append("g", { "clip-path": "url(#map-clip)", opacity: 0.45 });
+  const codes = ["HND", "SDJ", "NRT", "HND", "CTS", "FUK", "HND"];
+  for (let i = 0; i < codes.length; i += 1) {
+    const x = -40 + i * 195;
+    const color = i % 3 === 0 ? "#8e77e8" : i % 3 === 1 ? "#67cde8" : "#ee96b2";
+    const text = document.createElementNS(SVG_NS, "text");
+    text.setAttribute("x", x);
+    text.setAttribute("y", 124 + Math.sin(i) * 12);
+    text.setAttribute("fill", color);
+    text.setAttribute("font-size", "32");
+    text.setAttribute("font-weight", "850");
+    text.textContent = `✈ ${codes[i]}`;
+    group.appendChild(text);
+  }
+
+  for (let y = 112; y < size - 48; y += 19) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", `M 0 ${y} C 220 ${y - 28}, 420 ${y + 28}, 640 ${y} S 1040 ${y - 26}, 1200 ${y}`);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "#d8d7c8");
+    path.setAttribute("stroke-width", "0.8");
+    group.appendChild(path);
+  }
 }
 
 function makeAzimuthalProjector(centerLon, centerLat, originX, originY, scale) {
@@ -572,6 +730,20 @@ function airportOptionLabel(code) {
   const airport = airports[code] ?? {};
   const detail = [airport.city || airport.label || "", airport.country || ""].filter(Boolean).join(" / ");
   return detail ? `${code} - ${detail}` : code;
+}
+
+function formatPassportDate(date) {
+  const month = date.toLocaleString("en-US", { month: "short" }).toUpperCase();
+  return `${String(date.getDate()).padStart(2, "0")} ${month} ${String(date.getFullYear()).slice(-2)}`;
+}
+
+function formatMemberSince(years) {
+  if (!years.length) return "---";
+  return `01 JAN ${String(Math.min(...years)).slice(-2)}`;
+}
+
+function compactDate(value) {
+  return value.replaceAll(" ", "");
 }
 
 function sortedEntries(map) {

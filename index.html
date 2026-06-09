@@ -38,6 +38,14 @@
 
       <section id="app" class="app" hidden>
         <aside class="controls" aria-label="Map settings">
+          <fieldset class="mode-control">
+            <legend>Look</legend>
+            <div class="segmented-control" role="group" aria-label="Map look">
+              <button class="mode-button is-active" type="button" data-theme="atlas">Atlas</button>
+              <button class="mode-button" type="button" data-theme="passport">Passport</button>
+            </div>
+          </fieldset>
+
           <label for="center-airport">Center airport</label>
           <select id="center-airport"></select>
 
@@ -80,6 +88,55 @@
 
         <section class="map-shell">
           <svg id="flight-map" role="img" aria-label="Flight map"></svg>
+        </section>
+
+        <section id="passport-card" class="passport-card" hidden>
+          <div class="passport-pattern" aria-hidden="true"></div>
+          <div class="passport-heading">
+            <div>
+              <p>My Flight Passport</p>
+              <strong id="passport-flights">0</strong>
+              <span>flights</span>
+            </div>
+            <div class="passport-badge" aria-hidden="true">✈</div>
+          </div>
+          <dl class="passport-details">
+            <div>
+              <dt>Authority</dt>
+              <dd>Flight Atlas</dd>
+            </div>
+            <div>
+              <dt>Place of issue</dt>
+              <dd id="passport-issue-place">---</dd>
+            </div>
+            <div>
+              <dt>Date of issue</dt>
+              <dd id="passport-issue-date">---</dd>
+            </div>
+            <div>
+              <dt>Member since</dt>
+              <dd id="passport-member-since">---</dd>
+            </div>
+          </dl>
+          <div class="passport-stats">
+            <div>
+              <span>Distance</span>
+              <strong id="passport-distance">0 km</strong>
+            </div>
+            <div>
+              <span>Airports</span>
+              <strong id="passport-airports">0</strong>
+            </div>
+            <div>
+              <span>Routes</span>
+              <strong id="passport-routes">0</strong>
+            </div>
+            <div>
+              <span>Airlines</span>
+              <strong id="passport-airlines">0</strong>
+            </div>
+          </div>
+          <p id="passport-machine-line" class="passport-machine-line">ALLTIME&lt;&lt;FLIGHT&lt;ATLAS</p>
         </section>
 
         <section class="rankings">

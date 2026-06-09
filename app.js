@@ -299,13 +299,13 @@ function renderRows(tbody, rows) {
 
 function renderMap() {
   const size = 1200;
-  const pad = 76;
-  const radiusPx = size / 2 - pad;
+  const layout = mapLayout(size);
+  const radiusPx = layout.radius;
   const centerCode = els.center.value;
   const center = airports[centerCode];
   const rangeKm = Number(els.radius.value);
   const rangeRad = rangeKm / EARTH_RADIUS_KM;
-  const project = makeAzimuthalProjector(center.lon, center.lat, size / 2, size / 2, radiusPx / rangeRad);
+  const project = makeAzimuthalProjector(center.lon, center.lat, layout.cx, layout.cy, radiusPx / rangeRad);
   const palette = mapPalette();
 
   els.svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
@@ -316,21 +316,37 @@ function renderMap() {
   const clip = document.createElementNS(SVG_NS, "clipPath");
   clip.setAttribute("id", "map-clip");
   const clipCircle = document.createElementNS(SVG_NS, "circle");
-  clipCircle.setAttribute("cx", size / 2);
-  clipCircle.setAttribute("cy", size / 2);
+  clipCircle.setAttribute("cx", layout.cx);
+  clipCircle.setAttribute("cy", layout.cy);
   clipCircle.setAttribute("r", radiusPx);
   clip.appendChild(clipCircle);
   defs.appendChild(clip);
   if (currentTheme === "passport") addPassportPatterns(defs);
 
-  append("circle", { cx: size / 2, cy: size / 2, r: radiusPx, fill: palette.ocean, stroke: palette.border, "stroke-width": 1.2 });
-  if (currentTheme === "passport") drawPassportTopline(size);
+  append("circle", { cx: layout.cx, cy: layout.cy, r: radiusPx, fill: palette.ocean, stroke: palette.border, "stroke-width": palette.borderWidth });
+  if (currentTheme === "passport") drawPassportTopline(size, layout);
   drawWorldLand(project, rangeRad, palette);
   drawGraticule(project, rangeRad, palette);
   drawRoutes(project, rangeRad, palette);
   drawAirports(project, rangeRad, palette);
   drawLabels(project, rangeRad, centerCode, palette);
   drawTitle(size, centerCode, center, palette);
+}
+
+function mapLayout(size) {
+  if (currentTheme === "passport") {
+    return {
+      cx: size / 2,
+      cy: 650,
+      radius: 470,
+    };
+  }
+
+  return {
+    cx: size / 2,
+    cy: size / 2,
+    radius: size / 2 - 76,
+  };
 }
 
 function drawWorldLand(project, rangeRad, palette) {
@@ -479,6 +495,7 @@ function mapPalette() {
       page: "#fffdf3",
       ocean: "#fbfaf0",
       border: "#0a2f86",
+      borderWidth: 1.4,
       land: "url(#passport-land-stripes)",
       landStroke: "#7de1e4",
       landStrokeWidth: 0.35,
@@ -501,6 +518,7 @@ function mapPalette() {
     page: "#ffffff",
     ocean: "#eef6fb",
     border: "#9fb4c8",
+    borderWidth: 1.2,
     land: "#f4efe6",
     landStroke: "#d0c7b7",
     landStrokeWidth: 0.8,
@@ -543,15 +561,16 @@ function addPassportPatterns(defs) {
   defs.appendChild(pattern);
 }
 
-function drawPassportTopline(size) {
+function drawPassportTopline(size, layout) {
   const group = append("g", { "clip-path": "url(#map-clip)", opacity: 0.45 });
   const codes = ["HND", "SDJ", "NRT", "HND", "CTS", "FUK", "HND"];
+  const top = layout.cy - layout.radius;
   for (let i = 0; i < codes.length; i += 1) {
     const x = -40 + i * 195;
     const color = i % 3 === 0 ? "#8e77e8" : i % 3 === 1 ? "#67cde8" : "#ee96b2";
     const text = document.createElementNS(SVG_NS, "text");
     text.setAttribute("x", x);
-    text.setAttribute("y", 124 + Math.sin(i) * 12);
+    text.setAttribute("y", top + 44 + Math.sin(i) * 12);
     text.setAttribute("fill", color);
     text.setAttribute("font-size", "32");
     text.setAttribute("font-weight", "850");
@@ -559,7 +578,7 @@ function drawPassportTopline(size) {
     group.appendChild(text);
   }
 
-  for (let y = 112; y < size - 48; y += 19) {
+  for (let y = top + 34; y < size - 48; y += 19) {
     const path = document.createElementNS(SVG_NS, "path");
     path.setAttribute("d", `M 0 ${y} C 220 ${y - 28}, 420 ${y + 28}, 640 ${y} S 1040 ${y - 26}, 1200 ${y}`);
     path.setAttribute("fill", "none");

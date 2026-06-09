@@ -1,0 +1,11 @@
+Date,From,To,Diverted To,Canceled,Airline
+2024-01-12,SDJ,HND,,false,ANA
+2024-02-20,HND,CTS,,false,JAL
+2024-03-18,NRT,SFO,,false,United
+2024-04-03,SFO,JFK,,false,Delta
+2024-05-09,JFK,CDG,,false,Air France
+2024-06-14,CDG,HEL,,false,Finnair
+2024-07-22,HEL,HND,,false,JAL
+2024-08-11,HND,SDJ,,false,ANA
+2024-09-05,HND,OKA,,true,ANA
+2024-10-31,HND,FUK,KIX,false,JAL

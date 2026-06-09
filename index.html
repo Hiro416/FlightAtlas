@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Flight Atlas</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="kicker">Static Flighty CSV mapper</p>
+        <h1>My Flight Atlas</h1>
+        <p class="lead">
+          FlightyのCSVをブラウザ内だけで読み込み、任意の空港を中心にした正距方位図法のフライトマップを描画します。
+        </p>
+      </div>
+      <div class="upload-panel">
+        <label for="csv-file">Flighty CSV</label>
+        <input id="csv-file" type="file" accept=".csv,text/csv">
+        <button id="load-sample" type="button">Load sample</button>
+        <p id="file-note">CSVはサーバーへ送信されません。</p>
+        <div class="support-widget" aria-label="Support on Ko-fi">
+          <script type="text/javascript" src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"></script>
+          <script type="text/javascript">
+            kofiwidget2.init("Support me on Ko-fi", "#72a4f2", "I5Z3211SER");
+            kofiwidget2.draw();
+          </script>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="empty-state" class="empty-state">
+        <strong>CSVをアップロードすると、地図と集計がここに表示されます。</strong>
+        <span>PythonやStreamlitなしで動く静的サイト版です。</span>
+      </section>
+
+      <section id="app" class="app" hidden>
+        <aside class="controls" aria-label="Map settings">
+          <label for="center-airport">Center airport</label>
+          <select id="center-airport"></select>
+
+          <label for="map-radius">Map radius</label>
+          <div class="range-row">
+            <input id="map-radius" type="range" min="8000" max="20000" step="500" value="14500">
+            <output id="map-radius-value">14,500 km</output>
+          </div>
+
+          <div class="download-row">
+            <button id="download-svg" type="button">Download SVG</button>
+            <button id="download-png" type="button">Download PNG</button>
+          </div>
+
+          <p id="missing-airports" class="warning" hidden></p>
+        </aside>
+
+        <section class="overview" aria-label="Overview">
+          <div class="metric">
+            <span>Flights</span>
+            <strong id="metric-flights">0</strong>
+          </div>
+          <div class="metric">
+            <span>Airports</span>
+            <strong id="metric-airports">0</strong>
+          </div>
+          <div class="metric">
+            <span>Routes</span>
+            <strong id="metric-routes">0</strong>
+          </div>
+          <div class="metric">
+            <span>Distance</span>
+            <strong id="metric-distance">0 km</strong>
+          </div>
+          <div class="metric">
+            <span>Years</span>
+            <strong id="metric-years">N/A</strong>
+          </div>
+        </section>
+
+        <section class="map-shell">
+          <svg id="flight-map" role="img" aria-label="Flight map"></svg>
+        </section>
+
+        <section class="rankings">
+          <div>
+            <h2>Top Airports</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Airport</th>
+                  <th>City</th>
+                  <th>Country</th>
+                  <th>Flights</th>
+                </tr>
+              </thead>
+              <tbody id="airport-rank"></tbody>
+            </table>
+          </div>
+          <div>
+            <h2>Top Routes</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Route</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Flights</th>
+                </tr>
+              </thead>
+              <tbody id="route-rank"></tbody>
+            </table>
+          </div>
+          <div>
+            <h2>Top Airlines</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Airline</th>
+                  <th>Flights</th>
+                </tr>
+              </thead>
+              <tbody id="airline-rank"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
